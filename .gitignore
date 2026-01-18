@@ -1,1 +1,11 @@
 /venv
+
+# Exclude CSV files from processed data folders
+data/cleaned/*.csv
+data/enriched/*.csv
+data/scored/*.csv
+data/emails/*.csv
+data/final/*.csv
+data/final/*.txt
+
+src/__pycache__

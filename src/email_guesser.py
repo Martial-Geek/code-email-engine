@@ -199,14 +199,14 @@ def guess_emails(input_file: str, output_file: str = None, max_per_domain: int =
     
     # Save output
     if output_file is None:
-        output_file = input_file.replace('_scored.csv', '_emails.csv').replace('.csv', '_emails.csv')
+        output_file = input_file.replace('_scored.csv', '_emails.csv')
     
     output_path = EMAILS_DIR / output_file
     save_csv(emails_df, str(output_path))
     
     # Also save a deduplicated version (one email per domain, highest confidence)
     best_emails = emails_df.sort_values('confidence', ascending=False).drop_duplicates(subset=['domain'], keep='first')
-    best_output = output_file.replace('.csv', '_best.csv')
+    best_output = output_file.replace('_emails.csv', '_emails_best.csv')
     save_csv(best_emails, str(EMAILS_DIR / best_output))
     log_success(f"Also saved best-guess file with {len(best_emails)} unique emails")
     
