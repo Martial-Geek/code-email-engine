@@ -8,4 +8,4 @@ data/emails/*.csv
 data/final/*.csv
 data/final/*.txt
 
-src/__pycache__
+*.pyc
