@@ -16,6 +16,7 @@ from src.email_guesser import guess_emails
 from src.personalizer import personalize_leads
 from src.sequence_builder import build_sequence
 from utils.helpers import log_step, log_success, log_error
+from config.settings import EMAILS_DIR
 from rich.console import Console
 
 console = Console()
@@ -52,7 +53,9 @@ def run_full_pipeline(input_file: str, skip_ai: bool = False):
         
         # Step 4: Generate email guesses
         log_step("STEP 4/6: Generating email addresses")
-        emails_file = scored_file.replace('_scored.csv', '_emails_best.csv')
+        # Email files are saved in EMAILS_DIR, not in the same directory as scored file
+        emails_filename = Path(input_file).stem + '_emails_best.csv'
+        emails_file = str(EMAILS_DIR / emails_filename)
         guess_emails(scored_file)
         
         # Step 5: AI Personalization

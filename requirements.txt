@@ -2,9 +2,11 @@ pandas
 requests
 beautifulsoup4
 tldextract
-httpx
+httpx[http2]
 selectolax
 aiohttp
 rich
 pydantic
 ollama
+langchain-google-genai>=1.0.0
+langchain-core>=0.2.0

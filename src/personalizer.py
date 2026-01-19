@@ -1,41 +1,80 @@
 """
 Step 7: AI Personalization Engine
-Uses Ollama to generate personalized first lines for each lead.
+Uses LangChain with Google Gemini to generate personalized first lines for each lead.
 """
 
 import pandas as pd
 from pathlib import Path
-from typing import Optional, Dict, Any
-import ollama
+from typing import Optional
 import sys
 import time
 
 sys.path.append(str(Path(__file__).parent.parent))
 
-from config.settings import EMAILS_DIR, FINAL_DIR, OLLAMA_MODEL
+from config.settings import EMAILS_DIR, FINAL_DIR, GEMINI_API_KEY, GEMINI_MODEL
 from utils.helpers import load_csv_safe, save_csv, log_step, log_success, log_warning, log_error
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn
 
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+
+
+def get_llm() -> ChatGoogleGenerativeAI:
+    """Initialize the Gemini LLM."""
+    return ChatGoogleGenerativeAI(
+        model=GEMINI_MODEL,
+        google_api_key=GEMINI_API_KEY,
+        temperature=0.7,
+        max_output_tokens=100,
+    )
+
+
+def get_chain():
+    """Build the simple prompt -> LLM -> output chain."""
+    
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", """You write opening lines for cold emails to business owners.
+Rules:
+- ONE short line, under 20 words
+- Reference something specific about their website
+- Hint at an issue or opportunity without being negative
+- Sound human, not salesy
+- NO greetings (Hi, Hello, Hey)
+- NO mentions of your services
+
+Good examples:
+- "Noticed your site takes a few seconds to load - that can cost you visitors."
+- "Your plumbing business has great reviews, but your site might be missing out on mobile visitors."
+- "Saw you're still on WordPress 4 - there are some easy wins for speed there."
+"""),
+        ("human", """Website info:
+{context}
+
+Write only the first line:""")
+    ])
+    
+    llm = get_llm()
+    output_parser = StrOutputParser()
+    
+    return prompt | llm | output_parser
+
 
 def build_context(row: pd.Series) -> str:
-    """
-    Build context string for AI from lead data.
-    """
+    """Build context string for AI from lead data."""
     
     parts = []
     
     company = row.get('company_name', 'Unknown Company')
     parts.append(f"Company: {company}")
     
-    website = row.get('website', '')
-    if website:
+    if website := row.get('website', ''):
         parts.append(f"Website: {website}")
     
-    title = row.get('title', '')
-    if title:
+    if title := row.get('title', ''):
         parts.append(f"Website title: {title}")
     
-    # Issues detected
+    # Map issues to readable text
     reasons = row.get('score_reasons', '')
     if reasons and reasons != 'none':
         issue_map = {
@@ -48,105 +87,74 @@ def build_context(row: pd.Series) -> str:
             'no_meta': 'missing meta description for SEO'
         }
         
-        issues = []
-        for reason in reasons.split(','):
-            if reason in issue_map:
-                issues.append(issue_map[reason])
-        
+        issues = [issue_map[r] for r in reasons.split(',') if r in issue_map]
         if issues:
             parts.append(f"Technical issues: {', '.join(issues)}")
     
-    load_time = row.get('load_time', 0)
-    if load_time > 0:
+    if (load_time := row.get('load_time', 0)) > 0:
         parts.append(f"Page load time: {load_time} seconds")
     
-    cms = row.get('cms_detected', '')
-    if cms:
+    if cms := row.get('cms_detected', ''):
         parts.append(f"CMS: {cms}")
     
     return '\n'.join(parts)
 
 
-def generate_first_line(context: str, model: str = OLLAMA_MODEL) -> Optional[str]:
-    """
-    Generate personalized first line using Ollama.
-    """
+def clean_first_line(text: str) -> Optional[str]:
+    """Clean up the generated first line."""
     
-    prompt = f"""You are writing the opening line of a cold email to a business owner.
+    first_line = text.strip().strip('"\'')
+    
+    # Remove greetings
+    greetings = ['hi ', 'hello ', 'hey ', 'dear ']
+    for g in greetings:
+        if first_line.lower().startswith(g):
+            first_line = first_line[len(g):]
+    
+    return first_line if len(first_line) > 10 else None
 
-Based on this information about their website:
-{context}
 
-Write ONE short, specific opening line (under 20 words) that:
-1. References something specific about their website or business
-2. Hints at an issue or opportunity without being negative
-3. Sounds human and natural, not salesy
-4. Does NOT include greetings like "Hi" or "Hello"
-5. Does NOT mention your services or solutions
-
-Examples of good first lines:
-- "Noticed your site takes a few seconds to load - that can cost you visitors."
-- "Your plumbing business has great reviews, but your site might be missing out on mobile visitors."
-- "Saw you're still on WordPress 4 - there are some easy wins for speed there."
-
-Write only the first line, nothing else:"""
-
+def generate_first_line(chain, context: str) -> Optional[str]:
+    """Generate personalized first line using the chain."""
+    
     try:
-        response = ollama.generate(
-            model=model,
-            prompt=prompt,
-            options={
-                'temperature': 0.7,
-                'num_predict': 50,
-            }
-        )
-        
-        first_line = response['response'].strip()
-        
-        # Clean up common issues
-        first_line = first_line.strip('"\'')
-        
-        # Remove if it starts with greetings
-        greetings = ['hi ', 'hello ', 'hey ', 'dear ']
-        for g in greetings:
-            if first_line.lower().startswith(g):
-                first_line = first_line[len(g):]
-        
-        return first_line if len(first_line) > 10 else None
-        
+        response = chain.invoke({"context": context})
+        return clean_first_line(response)
     except Exception as e:
-        log_error(f"Ollama error: {e}")
+        log_error(f"Generation error: {e}")
         return None
 
 
 def personalize_leads(
     input_file: str, 
     output_file: str = None,
-    batch_size: int = 10,
     delay: float = 0.5
 ) -> pd.DataFrame:
     """
-    Main function to generate personalized first lines for all leads.
+    Generate personalized first lines for all leads.
     
     Args:
-        input_file: Input CSV from email guesser (best emails)
-        output_file: Output CSV filename
-        batch_size: Process in batches (for progress reporting)
-        delay: Delay between API calls (seconds)
+        input_file: Input CSV filename (in data/emails/)
+        output_file: Output CSV filename (in data/final/)
+        delay: Delay between API calls (seconds) - Gemini free tier has rate limits
     """
     
     log_step("Starting AI personalization")
     
-    # Check Ollama is running
-    try:
-        ollama.list()
-        log_success("Ollama connected")
-    except Exception as e:
-        log_error(f"Cannot connect to Ollama: {e}")
-        log_warning("Make sure Ollama is running: ollama serve")
+    # Validate API key
+    if not GEMINI_API_KEY:
+        log_error("GEMINI_API_KEY not set in config/settings.py")
         return pd.DataFrame()
     
-    # Load email data
+    # Initialize chain
+    try:
+        chain = get_chain()
+        log_success("Gemini connected")
+    except Exception as e:
+        log_error(f"Failed to initialize Gemini: {e}")
+        return pd.DataFrame()
+    
+    # Load data
     input_path = EMAILS_DIR / input_file
     df = load_csv_safe(str(input_path))
     
@@ -170,18 +178,18 @@ def personalize_leads(
         
         for idx, row in df.iterrows():
             context = build_context(row)
-            first_line = generate_first_line(context)
+            first_line = generate_first_line(chain, context)
             
             if first_line:
                 first_lines.append(first_line)
             else:
-                # Fallback generic line
+                # Fallback
                 company = row.get('company_name', 'your business')
                 first_lines.append(f"Took a look at {company}'s website and had a few thoughts.")
                 failed += 1
             
             progress.update(task, advance=1)
-            time.sleep(delay)  # Rate limiting
+            time.sleep(delay)  # Rate limiting for free tier
     
     df['first_line'] = first_lines
     
@@ -191,12 +199,12 @@ def personalize_leads(
     if failed > 0:
         log_warning(f"Used fallback for {failed} leads")
     
-    # Preview a few
+    # Preview
     log_step("Sample first lines:")
     for _, row in df.head(3).iterrows():
         print(f"  [{row['company_name']}]: {row['first_line']}")
     
-    # Save output
+    # Save
     if output_file is None:
         output_file = input_file.replace('_emails', '_personalized').replace('.csv', '_personalized.csv')
     
@@ -213,7 +221,7 @@ def main():
     parser = argparse.ArgumentParser(description='Generate AI-powered first lines')
     parser.add_argument('input_file', help='Input CSV filename (in data/emails/)')
     parser.add_argument('output_file', nargs='?', help='Output CSV filename (in data/final/)')
-    parser.add_argument('--delay', type=float, default=0.5, help='Delay between API calls')
+    parser.add_argument('--delay', type=float, default=1.0, help='Delay between API calls (default: 1.0 for free tier)')
     
     args = parser.parse_args()
     personalize_leads(args.input_file, args.output_file, delay=args.delay)

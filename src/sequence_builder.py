@@ -96,11 +96,16 @@ def build_sequence(
     # Build Instantly-ready CSV
     # Instantly uses {{variable}} syntax for personalization
     
+    # Handle missing first_line column (when AI personalization is skipped)
+    first_line_data = df.get('first_line', pd.Series([''] * len(df)))
+    if 'first_line' not in df.columns:
+        log_step("No personalized first lines found - using placeholders")
+    
     instantly_df = pd.DataFrame({
         'email': df['email'],
         'company_name': df['company_name'],
         'website': df['website'],
-        'first_line': df['first_line'],
+        'first_line': first_line_data,
         # Add any other fields you want to use in templates
         'priority': df.get('priority', ''),
         'score': df.get('score', 0),

@@ -47,8 +47,11 @@ EMAIL_PATTERNS = [
 ]
 
 # === AI SETTINGS ===
-OLLAMA_MODEL = "mistral"
-OLLAMA_HOST = "http://localhost:11434"
+import os
+
+# Get from: https://aistudio.google.com/app/apikey
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")  # Set via env var or paste here
+GEMINI_MODEL = "gemini-2.5-flash"  # Fast and free tier friendly
 
 # === OLD CMS INDICATORS ===
 OLD_CMS_MARKERS = [
