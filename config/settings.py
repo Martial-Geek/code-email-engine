@@ -3,10 +3,18 @@ Configuration settings for the cold email engine.
 Edit these values for your use case.
 """
 
+import sys
 from pathlib import Path
 
 # === PATHS ===
-BASE_DIR = Path(__file__).parent.parent
+# Handle PyInstaller bundled executable vs running from source
+if getattr(sys, 'frozen', False):
+    # Running as compiled executable
+    BASE_DIR = Path(sys.executable).parent
+else:
+    # Running from source
+    BASE_DIR = Path(__file__).parent.parent
+
 DATA_DIR = BASE_DIR / "data"
 
 RAW_DIR = DATA_DIR / "raw"
@@ -47,11 +55,8 @@ EMAIL_PATTERNS = [
 ]
 
 # === AI SETTINGS ===
-import os
-
-# Get from: https://aistudio.google.com/app/apikey
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")  # Set via env var or paste here
-GEMINI_MODEL = "gemini-2.5-flash"  # Fast and free tier friendly
+OLLAMA_MODEL = "mistral"
+OLLAMA_HOST = "http://localhost:11434"
 
 # === OLD CMS INDICATORS ===
 OLD_CMS_MARKERS = [
