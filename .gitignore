@@ -8,4 +8,9 @@ data/emails/*.csv
 data/final/*.csv
 data/final/*.txt
 
+dist/
+ColdEmailEngine_Portable/
+ColdEmailEngine_Portable.zip
+cold_email_app.spec
+
 *.pyc

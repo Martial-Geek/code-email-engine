@@ -1,0 +1,139 @@
+================================================================================
+                    COLD EMAIL OUTREACH ENGINE - USER GUIDE
+================================================================================
+
+Welcome! This guide will help you use the Cold Email Outreach Engine to
+process your leads and generate personalized email campaigns.
+
+================================================================================
+BEFORE YOU START
+================================================================================
+
+1. Place your CSV file with leads in the 'data/raw/' folder
+   (Your CSV should have columns: first_name, last_name, company, email, website, etc.)
+
+2. Make sure you have your API keys configured for AI features
+   (Required only if you want AI personalization)
+
+================================================================================
+HOW TO USE
+================================================================================
+
+OPTION 1: SIMPLE (Recommended for first time)
+================================================
+Double-click: ColdEmailEngine.exe
+Then enter: test_leads.csv
+
+This will:
+  ✓ Clean your lead data
+  ✓ Scrape company websites for intelligence
+  ✓ Score leads by quality
+  ✓ Guess email addresses
+  ✓ Create personalized emails using AI
+  ✓ Build an email sequence ready for Instantly
+
+Output: data/final/instantly_upload.csv
+
+
+OPTION 2: SKIP AI PERSONALIZATION
+====================================
+If you want results faster or don't have AI set up:
+
+ColdEmailEngine.exe test_leads.csv --skip-ai
+
+This is 10x faster! It does everything except AI personalization.
+
+
+OPTION 3: CUSTOM COMMANDS (Advanced Users)
+=============================================
+You can run individual steps:
+
+ColdEmailEngine.exe --step clean test_leads.csv
+ColdEmailEngine.exe --step scrape test_leads_cleaned.csv
+ColdEmailEngine.exe --step score test_leads_enriched.csv
+ColdEmailEngine.exe --step emails test_leads_scored.csv
+ColdEmailEngine.exe --step personalize test_leads_emails_best.csv
+ColdEmailEngine.exe --step sequence test_leads_personalized.csv
+
+================================================================================
+FILE STRUCTURE
+================================================================================
+
+After running the pipeline, you'll find:
+
+data/
+  ├── raw/                          [Where you put your CSV]
+  ├── cleaned/                       [Cleaned lead data]
+  ├── enriched/                      [Data with website info]
+  ├── scored/                        [Scored leads by quality]
+  ├── emails/                        [Guessed email addresses]
+  └── final/
+      ├── instantly_upload.csv       [MAIN OUTPUT - Ready to upload to Instantly]
+      └── email_templates.txt        [Sample email templates used]
+
+================================================================================
+EXAMPLE WORKFLOW
+================================================================================
+
+1. Get your leads as a CSV file (from LinkedIn, Hunter, Apollo, etc.)
+   Save it as: data/raw/my_prospects.csv
+
+2. Run the full pipeline:
+   ColdEmailEngine.exe my_prospects.csv
+
+3. Wait for completion (5-15 minutes depending on list size)
+
+4. Upload the output CSV to Instantly:
+   Open: data/final/instantly_upload.csv
+   Import to Instantly.com
+
+5. Copy personalized email templates:
+   Open: data/final/email_templates.txt
+   Use these in your Instantly sequences
+
+================================================================================
+COMMON ISSUES
+================================================================================
+
+Q: "File not found" error
+A: Make sure your CSV is in data/raw/ folder and you typed the filename correctly
+
+Q: Process is slow
+A: The scraper is intentionally slow to avoid getting blocked. This is normal.
+   Use --skip-ai to speed things up if you don't need AI features.
+
+Q: API key errors
+A: Make sure your Google API key is set up in config/settings.py
+   This is only needed if you use AI personalization.
+
+Q: Empty email addresses
+A: This happens when the email guesser can't find patterns. It's normal for
+   some companies. The tool will try multiple patterns.
+
+================================================================================
+NEED HELP?
+================================================================================
+
+Check that:
+  ✓ Your CSV file is in data/raw/
+  ✓ Column names match expected format (first_name, last_name, company, website)
+  ✓ You have internet connection (for web scraping)
+  ✓ Your API keys are configured (if using AI features)
+
+For technical support, check the error messages in the console window.
+
+================================================================================
+TIPS FOR BEST RESULTS
+================================================================================
+
+1. Clean your data first - remove duplicates, invalid emails
+2. Include company website URLs - this is crucial for scraping
+3. Use --skip-ai first to understand the process, then run full pipeline
+4. Review email templates before sending - customize them for your campaigns
+5. Test with 10-20 leads first, then scale to larger lists
+
+================================================================================
+
+Enjoy your cold email campaigns! 🚀
+
+================================================================================

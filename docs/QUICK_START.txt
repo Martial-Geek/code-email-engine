@@ -1,0 +1,78 @@
+================================================================================
+                    QUICK START FOR END USERS
+================================================================================
+
+STEP 1: Your First Run
+  1. Put your leads CSV in the "data/raw" folder
+  2. Open Command Prompt in the ColdEmailEngine folder
+  3. Run: ColdEmailEngine.exe my_leads.csv
+  4. Wait for completion (results appear in data/final/)
+
+That's it! The system will:
+  ✓ Clean the data
+  ✓ Find company information
+  ✓ Score lead quality
+  ✓ Guess email addresses
+  ✓ Write personalized emails with AI
+  ✓ Create Instantly-ready CSV
+
+Find your results in: data/final/instantly_upload.csv
+
+================================================================================
+
+STEP 2: (Optional) Skip AI for Speed
+  If you want results in 2 minutes instead of 15:
+  
+  Open Command Prompt and run:
+  ColdEmailEngine.exe my_leads.csv --skip-ai
+
+================================================================================
+
+WHAT YOU GET
+
+✓ instantly_upload.csv - Upload this directly to Instantly.com
+✓ email_templates.txt - Customize these emails for your campaign
+
+================================================================================
+
+WHAT YOUR CSV NEEDS
+
+Minimum columns:
+  - first_name
+  - last_name  
+  - company
+  - website (full URL like https://example.com)
+
+Optional:
+  - email (if you have it)
+  - title
+  - linkedin_url
+
+================================================================================
+
+PROBLEMS?
+
+"File not found" 
+→ Make sure CSV is in data/raw folder and spelled correctly
+
+"No emails found"
+→ Some companies don't follow standard email patterns. Normal!
+
+"Process very slow"
+→ Yes, intentionally slow to avoid being blocked. Use --skip-ai to go faster.
+
+"API errors"
+→ AI features need setup. Use --skip-ai to disable them.
+
+================================================================================
+
+NEXT STEPS
+
+1. Review the email templates in data/final/email_templates.txt
+2. Customize them for YOUR specific offer
+3. Upload instantly_upload.csv to Instantly.com
+4. Set up your sequence and launch!
+
+Good luck with your campaign! 🚀
+
+================================================================================
